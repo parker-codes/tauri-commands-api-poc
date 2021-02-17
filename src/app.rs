@@ -1,15 +1,16 @@
 use crate::cmd::{CommandSet, Executable};
+use std::marker::PhantomData;
 
-pub struct AppBuilder<T, U: CommandSet> {
+pub struct AppBuilder<T, U: CommandSet<T>> {
     user_data: Option<T>,
-    cmd_set_handler: Option<U>,
+    cmd_set_handler: PhantomData<U>,
 }
 
-impl<T, U: CommandSet> AppBuilder {
+impl<T, U: CommandSet<T>> AppBuilder<T, U> {
     pub fn new() -> Self {
         Self {
             user_data: None,
-            cmd_set_handler: None,
+            cmd_set_handler: PhantomData,
         }
     }
 
@@ -18,35 +19,30 @@ impl<T, U: CommandSet> AppBuilder {
         self
     }
 
-    pub fn cmd_set_handler(mut self, command_set: U) -> Self {
-        self.user_data = Some(command_set);
-        self
-    }
-
-    pub fn build(self) -> App {
+    pub fn build(self) -> App<T, U> {
         App {
-            user_data: self.user_data,
-            cmd_set_handler: self.command_set_handler,
+            user_data: self.user_data.unwrap(),
+            cmd_set_handler: self.cmd_set_handler,
             webview: "webview".to_string(),
         }
     }
 }
 
-pub struct App<T, U: CommandSet> {
+pub struct App<T, U: CommandSet<T>> {
     user_data: T,
-    cmd_set_handler: U,
+    cmd_set_handler: PhantomData<U>,
     webview: String,
 }
 
-impl App {
-    pub fn handle(self, arg: &str) -> Result<String, String> {
+impl<T, U: CommandSet<T>> App<T, U> {
+    pub fn handle(self, arg: String) -> Result<String, String> {
         let context = Context {
             user_data: self.user_data,
             webview: "webview".to_string(),
         };
 
         // TODO: the end goal of U is to hint at what type the JSON should be deserialized into
-        match serde_json::from_str::<U>(arg) {
+        match serde_json::from_str::<U>(&arg) {
             Err(e) => Err(e.to_string()),
             Ok(cmd) => execute_cmd(cmd, context),
         }
@@ -54,7 +50,7 @@ impl App {
 }
 
 // wrapping the method call ensures that the user sees an impl error? there's probably a cleaner way to do this..
-fn execute_cmd<U: CommandSet>(cmd: U, context: Context) -> Result<String, String> {
+fn execute_cmd<T, U: CommandSet<T>>(cmd: U, context: Context<T>) -> Result<String, String> {
     cmd.execute(context)
 }
 
