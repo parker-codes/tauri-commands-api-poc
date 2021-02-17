@@ -6,7 +6,7 @@ use cmd::{CommandSet, Executable};
 use serde::Deserialize;
 
 // user-defined app state
-struct State {
+pub struct State {
     status: String,
 }
 
@@ -16,7 +16,8 @@ struct State {
 pub struct GetAllTodos;
 
 impl Executable for GetAllTodos {
-    fn execute(self) -> Result<String, String> {
+    type State = State;
+    fn execute(self, context: Context<State>) -> Result<String, String> {
         Ok("got 'em".to_string())
     }
 }
@@ -27,7 +28,8 @@ pub struct CreateTodo {
 }
 
 impl Executable for CreateTodo {
-    fn execute(self) -> Result<String, String> {
+    type State = State;
+    fn execute(self, context: Context<State>) -> Result<String, String> {
         Ok("created".to_string())
     }
 }
@@ -45,7 +47,8 @@ pub enum Commands {
 }
 
 impl CommandSet for Commands {
-    fn execute(&self, context: Context) -> Result<String, String> {
+    type State = State;
+    fn execute(self, context: Context<State>) -> Result<String, String> {
         match self {
             Self::GetAllTodos(cmd) => cmd.execute(context),
             Self::CreateTodo(cmd) => cmd.execute(context),
@@ -63,15 +66,12 @@ mod tests {
     use crate::app::{App, AppBuilder};
     use crate::{Commands, State};
 
-    fn setup() -> App {
+    fn setup() -> App<Commands> {
         let app_state = State {
             status: "idle".to_string(),
         };
 
-        let app = AppBuilder::new()
-            .user_data(app_state)
-            .cmd_set_handler::<Commands>()
-            .build();
+        let app = AppBuilder::new().user_data(app_state).build();
 
         app
     }
@@ -81,7 +81,7 @@ mod tests {
         let app = setup();
 
         assert_eq!(
-            app.handle("{ \"cmd\": \"getAllTodos\" }"),
+            app.handle("{ \"cmd\": \"getAllTodos\" }".to_string()),
             Ok("got 'em".to_string())
         );
     }
@@ -91,7 +91,7 @@ mod tests {
         let app = setup();
 
         assert_eq!(
-            app.handle("{ \"cmd\": \"createTodo\" }"),
+            app.handle("{ \"cmd\": \"createTodo\" }".to_string()),
             Err("missing field `title`".to_string())
         );
     }
@@ -101,7 +101,7 @@ mod tests {
         let app = setup();
 
         assert_eq!(
-            app.handle("{ \"cmd\": \"createTodo\", \"title\": \"Do laundry\" }"),
+            app.handle("{ \"cmd\": \"createTodo\", \"title\": \"Do laundry\" }".to_string()),
             Ok("created".to_string())
         );
     }
@@ -110,7 +110,9 @@ mod tests {
     fn will_throw_error_when_command_not_found() {
         let app = setup();
 
-        assert!(app.handle("{ \"cmd\": \"incorrect\" }").is_err());
+        assert!(app
+            .handle("{ \"cmd\": \"incorrect\" }".to_string())
+            .is_err());
     }
 
     // TODO: test that impl warning is shown

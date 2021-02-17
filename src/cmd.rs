@@ -1,9 +1,12 @@
 use crate::app::Context;
+use serde::de::DeserializeOwned;
 
-pub trait CommandSet {
-    fn execute(&self, context: Context) -> Result<String, String>;
+pub trait CommandSet: DeserializeOwned {
+    type State;
+    fn execute(self, context: Context<Self::State>) -> Result<String, String>;
 }
 
 pub trait Executable {
-    fn execute(self, context: Context) -> Result<String, String>;
+    type State;
+    fn execute(self, context: Context<Self::State>) -> Result<String, String>;
 }
