@@ -29,7 +29,7 @@ impl<U: CommandSet> AppBuilder<U> {
 }
 
 pub struct App<U: CommandSet> {
-    user_data: U::State,
+    pub user_data: U::State,
     cmd_set_handler: PhantomData<U>,
     webview: String,
 }
@@ -54,7 +54,8 @@ fn execute_cmd<U: CommandSet>(cmd: U, context: Context<U::State>) -> Result<Stri
     cmd.execute(context)
 }
 
+#[derive(Debug)]
 pub struct Context<T> {
-    user_data: T,
-    webview: String,
+    pub user_data: T,
+    pub webview: String,
 }

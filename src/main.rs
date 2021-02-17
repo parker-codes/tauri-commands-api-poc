@@ -6,6 +6,7 @@ use cmd::{CommandSet, Executable};
 use serde::Deserialize;
 
 // user-defined app state
+#[derive(Debug)]
 pub struct State {
     status: String,
 }
@@ -18,6 +19,12 @@ pub struct GetAllTodos;
 impl Executable for GetAllTodos {
     type State = State;
     fn execute(self, context: Context<State>) -> Result<String, String> {
+        dbg!(&context);
+
+        if context.user_data.status == "error" {
+            return Err("uh oh!".to_string());
+        }
+
         Ok("got 'em".to_string())
     }
 }
@@ -30,6 +37,8 @@ pub struct CreateTodo {
 impl Executable for CreateTodo {
     type State = State;
     fn execute(self, context: Context<State>) -> Result<String, String> {
+        dbg!(&context.webview);
+
         Ok("created".to_string())
     }
 }
@@ -115,5 +124,16 @@ mod tests {
             .is_err());
     }
 
-    // TODO: test that impl warning is shown
+    #[test]
+    fn can_access_user_data_through_context() {
+        let mut app = setup();
+
+        // NOTE: user_data must be public for this test - is that okay to expose?
+        app.user_data.status = "error".to_string();
+
+        assert_eq!(
+            app.handle("{ \"cmd\": \"getAllTodos\" }".to_string()),
+            Err("uh oh!".to_string())
+        );
+    }
 }
