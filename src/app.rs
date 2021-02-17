@@ -1,17 +1,12 @@
 use crate::cmd::{CommandSet, Executable};
-use std::marker::PhantomData;
 
 pub struct AppBuilder<U: CommandSet> {
     user_data: Option<U::State>,
-    cmd_set_handler: PhantomData<U>,
 }
 
 impl<U: CommandSet> AppBuilder<U> {
     pub fn new() -> Self {
-        Self {
-            user_data: None,
-            cmd_set_handler: PhantomData,
-        }
+        Self { user_data: None }
     }
 
     pub fn user_data(mut self, user_data: U::State) -> Self {
@@ -22,7 +17,6 @@ impl<U: CommandSet> AppBuilder<U> {
     pub fn build(self) -> App<U> {
         App {
             user_data: self.user_data.unwrap(),
-            cmd_set_handler: self.cmd_set_handler,
             webview: "webview".to_string(),
         }
     }
@@ -30,7 +24,6 @@ impl<U: CommandSet> AppBuilder<U> {
 
 pub struct App<U: CommandSet> {
     pub user_data: U::State,
-    cmd_set_handler: PhantomData<U>,
     webview: String,
 }
 
