@@ -6,7 +6,7 @@ use cmd::{CommandSet, Executable};
 use serde::Deserialize;
 
 // user-defined app state
-struct State {
+pub struct State {
     status: String,
 }
 
@@ -15,7 +15,8 @@ struct State {
 #[derive(Deserialize, Clone, Debug, PartialEq)]
 pub struct GetAllTodos;
 
-impl Executable<State> for GetAllTodos {
+impl Executable for GetAllTodos {
+    type State = State;
     fn execute(self, context: Context<State>) -> Result<String, String> {
         Ok("got 'em".to_string())
     }
@@ -26,7 +27,8 @@ pub struct CreateTodo {
     title: String,
 }
 
-impl Executable<State> for CreateTodo {
+impl Executable for CreateTodo {
+    type State = State;
     fn execute(self, context: Context<State>) -> Result<String, String> {
         Ok("created".to_string())
     }
@@ -44,7 +46,8 @@ pub enum Commands {
     Error, // to catch any issues
 }
 
-impl CommandSet<State> for Commands {
+impl CommandSet for Commands {
+    type State = State;
     fn execute(self, context: Context<State>) -> Result<String, String> {
         match self {
             Self::GetAllTodos(cmd) => cmd.execute(context),
@@ -63,7 +66,7 @@ mod tests {
     use crate::app::{App, AppBuilder};
     use crate::{Commands, State};
 
-    fn setup() -> App<State, Commands> {
+    fn setup() -> App<Commands> {
         let app_state = State {
             status: "idle".to_string(),
         };

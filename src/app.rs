@@ -1,12 +1,12 @@
 use crate::cmd::{CommandSet, Executable};
 use std::marker::PhantomData;
 
-pub struct AppBuilder<T, U: CommandSet<T>> {
-    user_data: Option<T>,
+pub struct AppBuilder<U: CommandSet> {
+    user_data: Option<U::State>,
     cmd_set_handler: PhantomData<U>,
 }
 
-impl<T, U: CommandSet<T>> AppBuilder<T, U> {
+impl<U: CommandSet> AppBuilder<U> {
     pub fn new() -> Self {
         Self {
             user_data: None,
@@ -14,12 +14,12 @@ impl<T, U: CommandSet<T>> AppBuilder<T, U> {
         }
     }
 
-    pub fn user_data(mut self, user_data: T) -> Self {
+    pub fn user_data(mut self, user_data: U::State) -> Self {
         self.user_data = Some(user_data);
         self
     }
 
-    pub fn build(self) -> App<T, U> {
+    pub fn build(self) -> App<U> {
         App {
             user_data: self.user_data.unwrap(),
             cmd_set_handler: self.cmd_set_handler,
@@ -28,13 +28,13 @@ impl<T, U: CommandSet<T>> AppBuilder<T, U> {
     }
 }
 
-pub struct App<T, U: CommandSet<T>> {
-    user_data: T,
+pub struct App<U: CommandSet> {
+    user_data: U::State,
     cmd_set_handler: PhantomData<U>,
     webview: String,
 }
 
-impl<T, U: CommandSet<T>> App<T, U> {
+impl<U: CommandSet> App<U> {
     pub fn handle(self, arg: String) -> Result<String, String> {
         let context = Context {
             user_data: self.user_data,
@@ -50,7 +50,7 @@ impl<T, U: CommandSet<T>> App<T, U> {
 }
 
 // wrapping the method call ensures that the user sees an impl error? there's probably a cleaner way to do this..
-fn execute_cmd<T, U: CommandSet<T>>(cmd: U, context: Context<T>) -> Result<String, String> {
+fn execute_cmd<U: CommandSet>(cmd: U, context: Context<U::State>) -> Result<String, String> {
     cmd.execute(context)
 }
 
